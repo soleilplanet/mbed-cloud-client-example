@@ -1,0 +1,29 @@
+{
+    "name": "UBLOX_AT",
+    "config": {
+        "tx": {
+            "help": "TX pin for serial connection. D1 assumed if Arduino Form Factor, needs to be set/overwritten otherwise.",
+            "value": "PD_5"
+        },
+        "rx": {
+            "help": "RX pin for serial connection. D0 assumed if Arduino Form Factor, needs to be set/overwritten otherwise.",
+            "value": "PD_6"
+        },
+        "rts": {
+            "help": "RTS pin for serial connection",
+            "value": "PD_4"
+        },
+        "cts": {
+            "help": "CTS pin for serial connection",
+            "value": "PD_3"
+        },
+        "baudrate" : {
+            "help": "Serial connection baud rate",
+            "value": 115200
+        },
+        "provide-default": {
+            "help": "Provide as default CellularDevice [true/false]",
+            "value": true
+        }
+    }
+}
