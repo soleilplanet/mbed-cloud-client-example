@@ -1,0 +1,153 @@
+diff --git a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT.cpp b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT.cpp
+index a2efdbe..d0d70a8 100644
+--- a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT.cpp
++++ b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT.cpp
+@@ -40,6 +40,26 @@ static const intptr_t cellular_properties[AT_CellularBase::PROPERTY_MAX] = {
+     0,  // PROPERTY_NON_IP_PDP_TYPE
+     1,  // PROPERTY_AT_CGEREP
+ };
++//<sophie, porting ublox R410M and N410, add UBLOX_SARA_R410M_02B
++#elif (UBLOX_SARA_R410M_02B == 1) || (UBLOX_SARA_N410 == 1)
++static const intptr_t cellular_properties[AT_CellularBase::PROPERTY_MAX] = {
++    AT_CellularNetwork::RegistrationModeLAC,        // C_EREG
++    AT_CellularNetwork::RegistrationModeDisable,    // C_GREG
++    AT_CellularNetwork::RegistrationModeDisable,    // C_REG
++    0,  // AT_CGSN_WITH_TYPE
++    1,  // AT_CGDATA
++    0,  // AT_CGAUTH
++    1,  // AT_CNMI
++    1,  // AT_CSMP
++    1,  // AT_CMGF
++    1,  // AT_CSDH
++    1,  // PROPERTY_IPV4_STACK
++    0,  // PROPERTY_IPV6_STACK
++    0,  // PROPERTY_IPV4V6_STACK
++    0,  // PROPERTY_NON_IP_PDP_TYPE
++    1,  // PROPERTY_AT_CGEREP
++};
++//>sophie, porting ublox R410M and N410, add UBLOX_SARA_R410M_02B
+ #else
+ static const intptr_t cellular_properties[AT_CellularBase::PROPERTY_MAX] = {
+     AT_CellularNetwork::RegistrationModeDisable,// C_EREG
+@@ -81,7 +101,7 @@ CellularDevice *CellularDevice::get_default_instance()
+ {
+     static UARTSerial serial(MBED_CONF_UBLOX_AT_TX, MBED_CONF_UBLOX_AT_RX, MBED_CONF_UBLOX_AT_BAUDRATE);
+ #if defined (MBED_CONF_UBLOX_AT_RTS) && defined(MBED_CONF_UBLOX_AT_CTS)
+-    tr_debug("UBLOX_AT flow control: RTS %d CTS %d", MBED_CONF_UBLOX_AT_RTS, MBED_CONF_UBLOX_AT_CTS);
++    printf/*tr_debug*/("UBLOX_AT flow control: RTS %d CTS %d", MBED_CONF_UBLOX_AT_RTS, MBED_CONF_UBLOX_AT_CTS);
+     serial.set_flow_control(SerialBase::RTSCTS, MBED_CONF_UBLOX_AT_RTS, MBED_CONF_UBLOX_AT_CTS);
+ #endif
+     static UBLOX_AT device(&serial);
+diff --git a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularContext.cpp b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularContext.cpp
+index 214b9eb..23f9f96 100644
+--- a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularContext.cpp
++++ b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularContext.cpp
+@@ -53,6 +53,10 @@ void UBLOX_AT_CellularContext::do_connect()
+     // Attempt to establish a connection
+ #ifdef TARGET_UBLOX_C030_R41XM
+     _cb_data.error = NSAPI_ERROR_OK;
++//<sophie, porting ublox R410M and N410, add UBLOX_SARA_R410M_02B
++#elif (UBLOX_SARA_R410M_02B == 1) || (UBLOX_SARA_N410 == 1)
++	_cb_data.error = NSAPI_ERROR_OK;
++//>sophie, porting ublox R410M and N410, add UBLOX_SARA_R410M_02B
+ #else
+     _cb_data.error = open_data_channel();
+ #endif
+diff --git a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularNetwork.cpp b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularNetwork.cpp
+index 97687b2..94cda49 100644
+--- a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularNetwork.cpp
++++ b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularNetwork.cpp
+@@ -51,6 +51,16 @@ nsapi_error_t UBLOX_AT_CellularNetwork::set_access_technology_impl(RadioAccessTe
+             break;
+         case RAT_HSDPA_HSUPA:
+             break;
++//<sophie, porting ublox R410M and N410, add UBLOX_SARA_R410M_02B
++#elif defined(UBLOX_SARA_R410M_02B) && (UBLOX_SARA_R410M_02B == 1)
++		case RAT_CATM1:
++			break;
++		case RAT_NB1:
++			break;
++#elif defined(UBLOX_SARA_N410) && (UBLOX_SARA_N410 == 1)
++		case RAT_NB1:
++			break;
++//>sophie, porting ublox R410M and N410, add UBLOX_SARA_R410M_02B
+ #elif defined(TARGET_UBLOX_C030_R41XM)
+         case RAT_CATM1:
+             break;
+diff --git a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.cpp b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.cpp
+index 983bdaf..9a5ae67 100644
+--- a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.cpp
++++ b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.cpp
+@@ -434,6 +434,8 @@ void UBLOX_AT_CellularStack::clear_socket(CellularSocket *socket)
+     }
+ }
+ 
++//<sophie, porting ublox R410M and N410, UBLOX_SARA_R410M_02B not support this command
++#if (UBLOX_SARA_R410M_02B == 0) && (UBLOX_SARA_N410 == 0)
+ const char *UBLOX_AT_CellularStack::get_ip_address()
+ {
+     _at.lock();
+@@ -499,3 +501,7 @@ nsapi_error_t UBLOX_AT_CellularStack::gethostbyname(const char *host, SocketAddr
+ 
+     return err;
+ }
++#endif	// #if (!defined(UBLOX_SARA_R410M_02B) || (UBLOX_SARA_R410M_02B == 0)) && (!defined(UBLOX_SARA_N410) || (UBLOX_SARA_N410 == 0))
++//>sophie, porting ublox R410M and N410, UBLOX_SARA_R410M_02B not support this command
++
++
+diff --git a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.h b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.h
+index 3638559..3464f6c 100644
+--- a/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.h
++++ b/features/cellular/framework/targets/UBLOX/AT/UBLOX_AT_CellularStack.h
+@@ -30,10 +30,14 @@ public:
+     UBLOX_AT_CellularStack(ATHandler &atHandler, int cid, nsapi_ip_stack_t stack_type);
+     virtual ~UBLOX_AT_CellularStack();
+ 
++	//<sophie, porting ublox R410M and N410, UBLOX_SARA_R410M_02B not support this command
++	#if (UBLOX_SARA_R410M_02B == 0) && (UBLOX_SARA_N410 == 0)
+     virtual const char *get_ip_address();
+ 
+     virtual nsapi_error_t gethostbyname(const char *host,
+                                         SocketAddress *address, nsapi_version_t version = NSAPI_UNSPEC, const char *interface_name = NULL);
++	#endif
++	//>sophie, porting ublox R410M and N410, UBLOX_SARA_R410M_02B not support this command
+ 
+ protected:
+     virtual nsapi_error_t socket_listen(nsapi_socket_t handle, int backlog);
+diff --git a/features/cellular/framework/targets/UBLOX/AT/mbed_lib.json b/features/cellular/framework/targets/UBLOX/AT/mbed_lib.json
+index 4db0d2f..d1f008a 100644
+--- a/features/cellular/framework/targets/UBLOX/AT/mbed_lib.json
++++ b/features/cellular/framework/targets/UBLOX/AT/mbed_lib.json
+@@ -3,19 +3,19 @@
+     "config": {
+         "tx": {
+             "help": "TX pin for serial connection. D1 assumed if Arduino Form Factor, needs to be set/overwritten otherwise.",
+-            "value": null
++            "value": "PD_5"
+         },
+         "rx": {
+             "help": "RX pin for serial connection. D0 assumed if Arduino Form Factor, needs to be set/overwritten otherwise.",
+-            "value": null
++            "value": "PD_6"
+         },
+         "rts": {
+             "help": "RTS pin for serial connection",
+-            "value": null
++            "value": "PD_4"
+         },
+         "cts": {
+             "help": "CTS pin for serial connection",
+-            "value": null
++            "value": "PD_3"
+         },
+         "baudrate" : {
+             "help": "Serial connection baud rate",
+@@ -23,7 +23,7 @@
+         },
+         "provide-default": {
+             "help": "Provide as default CellularDevice [true/false]",
+-            "value": false
++            "value": true
+         }
+     }
+ }
