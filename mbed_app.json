@@ -1,7 +1,11 @@
 {
     "macros": [
         "MBED_BOOTLOADER_SIZE=(32*1024)",
-        "ARM_UC_USE_PAL_BLOCKDEVICE=1"
+        "ARM_UC_USE_PAL_BLOCKDEVICE=1",
+        "MDMRESET=PG_7",
+        "CELLULAR_DEVICE=UBLOX_AT",
+        "UBLOX_SARA_R410M_02B=0",
+        "UBLOX_SARA_N410=1"
     ],
     "target_overrides": {
         "*": {
