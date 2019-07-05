@@ -5,7 +5,8 @@
         "MDMRESET=PG_7",
         "CELLULAR_DEVICE=UBLOX_AT",
         "UBLOX_SARA_R410M_02B=0",
-        "UBLOX_SARA_N410=1"
+        "UBLOX_SARA_N410=1",
+        "PAL_UDP_MTU_SIZE=1024"
     ],
     "target_overrides": {
         "*": {
