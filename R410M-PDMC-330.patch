@@ -1,0 +1,40 @@
+diff --git a/mbed-client-pal/Configs/mbedTLS/mbedTLSConfig_mbedOS.h b/mbed-client-pal/Configs/mbedTLS/mbedTLSConfig_mbedOS.h
+index 5156e90..9629a07 100644
+--- a/mbed-client-pal/Configs/mbedTLS/mbedTLSConfig_mbedOS.h
++++ b/mbed-client-pal/Configs/mbedTLS/mbedTLSConfig_mbedOS.h
+@@ -291,7 +291,7 @@
+ 
+ #undef MBEDTLS_VERSION_FEATURES
+ 
+-#undef MBEDTLS_DEBUG_C
++//#undef MBEDTLS_DEBUG_C //alvin
+ 
+ // needed for parsing the certificates
+ #undef MBEDTLS_PEM_PARSE_C
+diff --git a/mbed-client-pal/Source/Port/Reference-Impl/Lib_Specific/mbedTLS/TLS/pal_plat_TLS.c b/mbed-client-pal/Source/Port/Reference-Impl/Lib_Specific/mbedTLS/TLS/pal_plat_TLS.c
+index 249933b..a0cd245 100755
+--- a/mbed-client-pal/Source/Port/Reference-Impl/Lib_Specific/mbedTLS/TLS/pal_plat_TLS.c
++++ b/mbed-client-pal/Source/Port/Reference-Impl/Lib_Specific/mbedTLS/TLS/pal_plat_TLS.c
+@@ -719,6 +719,9 @@ palStatus_t pal_plat_sslSetup(palTLSHandle_t palTLSHandle, palTLSConfHandle_t pa
+     palTLSConf_t* localConfigCtx = (palTLSConf_t*)palTLSConf;
+     int32_t platStatus = SSL_LIB_SUCCESS;
+ 
++    /* alvin */
++    mbedtls_ssl_set_mtu(&localTLSCtx->tlsCtx, 1024);
++
+     if (!localTLSCtx->wantReadOrWrite)
+     {
+         platStatus = mbedtls_ssl_setup(&localTLSCtx->tlsCtx, localConfigCtx->confCtx);
+diff --git a/mbed-client-pal/mbed_lib.json b/mbed-client-pal/mbed_lib.json
+index 0d0d740..aaed737 100644
+--- a/mbed-client-pal/mbed_lib.json
++++ b/mbed-client-pal/mbed_lib.json
+@@ -11,7 +11,7 @@
+         "pal-max-frag-len": {
+             "help": "Maximum fragment length value for the payload in one packet, doesnt include TLS header and encryption overhead. Is needed for constrainted devices having low MTU sizes, Value 0 = disabled, 1 = MBEDTLS_SSL_MAX_FRAG_LEN_512, 2= MBEDTLS_SSL_MAX_FRAG_LEN_1024, 3 = MBEDTLS_SSL_MAX_FRAG_LEN_2048, 4 = MBEDTLS_SSL_MAX_FRAG_LEN_4096",
+             "macro_name": "PAL_MAX_FRAG_LEN",
+-            "value": 0
++            "value": 1
+         },
+         "pal-net-server-socket-api": {
+             "help": "Enable/disable server socket features(accept(), listen())",

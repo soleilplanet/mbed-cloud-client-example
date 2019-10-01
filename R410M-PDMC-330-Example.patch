@@ -1,0 +1,163 @@
+diff --git a/main.cpp b/main.cpp
+index 1abbd03..aba0649 100644
+--- a/main.cpp
++++ b/main.cpp
+@@ -27,6 +27,9 @@
+ #include "certificate_enrollment_user_cb.h"
+ #endif
+ 
++Thread working_thread(osPriorityBelowNormal, 1024, nullptr, nullptr);
++Thread sleeping_thread(osPriorityBelowNormal, 1024, nullptr, nullptr);
++
+ #if defined(MBED_CONF_NANOSTACK_HAL_EVENT_LOOP_USE_MBED_EVENTS) && \
+  (MBED_CONF_NANOSTACK_HAL_EVENT_LOOP_USE_MBED_EVENTS == 1) && \
+  defined(MBED_CONF_EVENTS_SHARED_DISPATCH_FROM_APPLICATION) && \
+@@ -59,6 +62,30 @@ static M2MResource* blink_res;
+ // Pointer to mbedClient, used for calling close function.
+ static SimpleM2MClient *client;
+ 
++void sleepy_thread(void)
++{
++    int i = 0;
++
++    while(1)
++    {
++        i++;
++        i%=1000;
++        ThisThread::sleep_for(500);
++    }
++}
++
++void busy_thread(void)
++{
++    int i = 0;
++
++    while(1)
++    {
++        i++;
++        i%=1000;
++        //ThisThread::sleep_for(500);
++    }
++}
++
+ void pattern_updated(const char *)
+ {
+     printf("PUT received, new value: %s\n", pattern_res->get_value_string().c_str());
+@@ -251,6 +278,8 @@ void main_application(void)
+     queue->dispatch_forever();
+ #else
+ 
++    sleeping_thread.start(sleepy_thread);
++
+     // Check if client is registering or registered, if true sleep and repeat.
+     while (mbedClient.is_register_called()) {
+         mcc_platform_do_wait(100);
+@@ -258,5 +287,6 @@ void main_application(void)
+ 
+     // Client unregistered, disconnect and exit program.
+     mcc_platform_close_connection();
++
+ #endif
+ }
+diff --git a/mbed-cloud-client.lib b/mbed-cloud-client.lib
+index fddf1b7..640d185 100644
+--- a/mbed-cloud-client.lib
++++ b/mbed-cloud-client.lib
+@@ -1 +1 @@
+-https://github.com/ARMmbed/mbed-cloud-client/#4f4a8463dd06160844fe430192741a678cd34183
++https://github.com/ARMmbed/mbed-cloud-client/#1a16ef2bad7d5e48e5efb50fbc52e55add28f667
+diff --git a/mbed-os.lib b/mbed-os.lib
+index dd823e1..0423115 100644
+--- a/mbed-os.lib
++++ b/mbed-os.lib
+@@ -1 +1 @@
+-https://github.com/ARMmbed/mbed-os/#73f096399b4cda1f780b140c87afad9446047432
++https://github.com/ARMmbed/mbed-os/#b6e5a0a8afa34dec9dae8963778aebce0c82a54b
+diff --git a/mbed_app.json b/mbed_app.json
+index 3dc7104..72140fc 100755
+--- a/mbed_app.json
++++ b/mbed_app.json
+@@ -4,9 +4,9 @@
+         "ARM_UC_USE_PAL_BLOCKDEVICE=1",
+         "MDMRESET=PG_7",
+         "CELLULAR_DEVICE=UBLOX_AT",
+-        "UBLOX_SARA_R410M_02B=0",
+-        "UBLOX_SARA_N410=1",
+-        "PAL_UDP_MTU_SIZE=1024"
++        "UBLOX_SARA_R410M_02B=1",
++        "UBLOX_SARA_N410=0",
++        "MBED_TICKLESS=1"
+     ],
+     "target_overrides": {
+         "*": {
+@@ -15,19 +15,28 @@
+             "platform.stdio-convert-newlines"           : true,
+             "platform.stdio-buffered-serial"            : true,
+             "platform.stdio-flush-at-exit"              : true,
+-            "rtos.main-thread-stack-size"               : 5120,
+-            "rtos.timer-thread-stack-size"              : 256,
+-            "rtos.idle-thread-stack-size"               : 256,
++            "rtos.main-thread-stack-size"               : 8192,
++            "rtos.timer-thread-stack-size"              : 512,
++            "rtos.idle-thread-stack-size"               : 512,
+             "client_app.platform-enable-button"         : 0,
+             "client_app.platform-enable-led"            : 0,
+             "mbed-client-pal.pal-dns-api-version"       : 2,
+             "mbed-cloud-client.external-sst-support"    : 1,
+             "update-client.storage-locations"           : 1,
+-            "mbed-trace.enable"                         : null,
++            "mbed-trace.enable"                         : true,
+             "events.shared-stacksize"                   : 2048,
+             "nsapi.default-wifi-security"               : "WPA_WPA2",
+             "nsapi.default-wifi-ssid"                   : "\"SSID\"",
+-            "nsapi.default-wifi-password"               : "\"Password\""
++            "nsapi.default-wifi-password"               : "\"Password\"",
++            "nsapi.default-cellular-plmn": 0,
++            "nsapi.default-cellular-sim-pin": null,
++            "nsapi.default-cellular-apn"        : "\"internet.iot\"",
++            "nsapi.default-cellular-username": null,
++            "nsapi.default-cellular-password": null,
++            "nanostack-eventloop.use_platform_tick_timer": true,
++            "nanostack-eventloop.exclude_highres_timer": true,
++            "events.use-lowpower-timer-ticker": true,
++            "platform.poll-use-lowpower-timer": true
+         },
+         "Freescale": {
+             "lwip.mem-size"                             : 12500
+@@ -85,7 +94,10 @@
+             "mbed-cloud-client.update-storage"          : "ARM_UCP_FLASHIAP",
+             "storage_tdb_internal.internal_base_address": "(MBED_ROM_START+1024*1024)",
+             "storage_tdb_internal.internal_size"        : "(128*1024)",
+-            "storage.storage_type"                      : "TDB_INTERNAL"
++            "storage.storage_type"                      : "TDB_INTERNAL",
++            "cellular.debug-at"                         : false,
++            "cellular.use-apn-lookup"                   : false,
++            "mbed-client.sn-coap-max-blockwise-payload-size" : 256
+         },
+         "UBLOX_EVK_ODIN_W2": {
+             "target.network-default-interface-type"     : "WIFI",
+@@ -159,6 +171,11 @@
+         "led-pinname"   : {
+             "help"      : "PinName for led, which is attached to led blink resource.",
+             "value"     : "LED_RED"
++        },
++	"trace-level": {
++            "help": "Options are TRACE_LEVEL_ERROR,TRACE_LEVEL_WARN,TRACE_LEVEL_INFO,TRACE_LEVEL_DEBUG",
++            "macro_name": "MBED_TRACE_MAX_LEVEL",
++            "value": "TRACE_LEVEL_DEBUG"
+         }
+     }
+ }
+diff --git a/mbed_cloud_client_user_config.h b/mbed_cloud_client_user_config.h
+index 678e208..bf0b30c 100644
+--- a/mbed_cloud_client_user_config.h
++++ b/mbed_cloud_client_user_config.h
+@@ -34,7 +34,7 @@
+ #ifdef MBED_CONF_MBED_CLIENT_SN_COAP_MAX_BLOCKWISE_PAYLOAD_SIZE
+     #define SN_COAP_MAX_BLOCKWISE_PAYLOAD_SIZE    MBED_CONF_MBED_CLIENT_SN_COAP_MAX_BLOCKWISE_PAYLOAD_SIZE
+ #else
+-    #define SN_COAP_MAX_BLOCKWISE_PAYLOAD_SIZE 512
++    #define SN_COAP_MAX_BLOCKWISE_PAYLOAD_SIZE 256
+ #endif
+     #define MBED_CLOUD_CLIENT_TRANSPORT_MODE_UDP_QUEUE
+ #endif
