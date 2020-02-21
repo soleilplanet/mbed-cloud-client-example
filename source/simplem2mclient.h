@@ -84,7 +84,12 @@ public:
     void close() {
         _cloud_client.close();
     }
-
+    void pause() {
+        _cloud_client.pause();
+    }
+    void resume(void *iface) {
+        _cloud_client.resume(iface);
+    }
     void register_update() {
         _cloud_client.register_update();
     }

@@ -1,0 +1,42 @@
+diff --git a/targets/targets.json b/targets/targets.json
+index 2674ec1..bb41375 100644
+--- a/targets/targets.json
++++ b/targets/targets.json
+@@ -3786,8 +3786,19 @@
+                 "help": "Mask value : USE_PLL_HSE_EXTC (need HW patch) | USE_PLL_HSE_XTAL (need HW patch) | USE_PLL_HSI | USE_PLL_MSI",
+                 "value": "USE_PLL_HSE_XTAL",
+                 "macro_name": "CLOCK_SOURCE"
++
++            },
++           "lpticker_lptim": {
++               "help": "This target supports LPTIM. Set value 1 to use LPTIM for LPTICKER, or 0 to use RTC wakeup timer",
++               "value": 1
+             }
+         },
++        "overrides": { 
++                "lpuart_clock_source": "USE_LPUART_CLK_HSI",
++                "tickless-from-us-ticker": false,
++                "deep-sleep-latency": 3,
++                "lpticker_delay_ticks": 4
++        },
+         "overrides": { "lpuart_clock_source": "USE_LPUART_CLK_HSI" },
+         "detect_code": ["0460"],
+         "macros_add": [
+@@ -3797,6 +3808,9 @@
+             "MBED_SPLIT_HEAP"
+         ],
+         "device_has_add": [
++            "LPTICKER",
++            "USTICKER",
++            "SLEEP",
+             "ANALOGOUT",
+             "CRC",
+             "SERIAL_ASYNCH",
+@@ -3804,7 +3818,6 @@
+             "FLASH",
+             "MPU"
+         ],
+-        "device_has_remove": ["LPTICKER"],
+         "release_versions": ["5"],
+         "device_name": "STM32L486RG",
+         "bootloader_supported": true,

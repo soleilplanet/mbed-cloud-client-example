@@ -34,10 +34,24 @@
 #include "nanostack-event-loop/eventOS_scheduler.h"
 #endif
 
+#include "CellularNonIPSocket.h"
+#include "CellularDevice.h"
+#include "nanostack-event-loop/eventOS_scheduler.h"
+#include "UARTSerial.h"
+#include "ATHandler.h"
+
 // event based LED blinker, controlled via pattern_resource
 #ifndef MCC_MEMORY
 static Blinky blinky;
 #endif
+
+// Added for Mbed Tickless testing
+mbed_stats_cpu_t stats;
+volatile uint32_t ticker_callback_count = 0;
+static time_t last_update;
+
+//WISE-1570 bug: LPUART clock not resumed after deep sleep
+UARTSerial modemUART(MDMTXD, MDMRXD, 9600);
 
 static void main_application(void);
 
@@ -62,6 +76,96 @@ void unregister(void);
 
 // Pointer to mbedClient, used for calling close function.
 static SimpleM2MClient *client;
+
+void uart_suspend(void)
+{
+    CellularDevice *device = CellularDevice::get_default_instance();
+    ATHandler* h_at = device->get_at_handler() ;
+
+    printf("uart suspend...\n");
+    printf("suspend cellular AT Handler input\n");
+    h_at->get_file_handle()->enable_input(false);
+    printf("suspend cellular AT Handler output\n");
+    h_at->get_file_handle()->enable_output(false);
+
+    //WISE-1570 bug: LPUART clock not resumed after deep sleep
+    modemUART.enable_input(false);
+    modemUART.enable_output(false);
+    printf("suspend modem UART\n");
+
+    printf("suspend stdio input\n");
+    ThisThread::sleep_for(1000);
+    mbed_file_handle(STDIN_FILENO)->enable_input(false);
+    printf("suspend stdio output\n");
+    ThisThread::sleep_for(1000);
+    mbed_file_handle(STDIN_FILENO)->enable_output(false);
+
+}
+
+
+void uart_resume(void)
+{
+    CellularDevice *device = CellularDevice::get_default_instance();
+    ATHandler* h_at = device->get_at_handler() ;
+
+    printf("uart resume...\n");
+    mbed_file_handle(STDIN_FILENO)->enable_output(true);
+    printf("stdio output resumed\n");
+    mbed_file_handle(STDIN_FILENO)->enable_input(true);
+    printf("stdio input resumed\n");
+
+    //WISE-1570 bug: LPUART clock not resumed after deep sleep
+    modemUART.enable_input(true);
+    modemUART.enable_output(true);
+    printf("resume modem UART\n");
+
+    h_at->get_file_handle()->enable_input(true);
+    printf("cellular AT Hanlder input resumed\n");
+    h_at->get_file_handle()->enable_output(true);
+    printf("cellular AT Hanlder output resumed\n");
+
+    //WISE-1570 bug: LPUART clock not resumed after deep sleep
+    modemUART.set_baud(9600);//WISE-1570 LPUART re-initialize
+    printf("modem UART baudrate reset\n");
+
+    ThisThread::sleep_for(1000);
+
+}
+
+void check_deepsleep()
+{
+	ticker_callback_count = 0;
+
+	printf("Deep sleep allowed: %i\r\n", sleep_manager_can_deep_sleep());
+	while (1) {
+                uart_suspend();
+                ThisThread::sleep_for(30000);
+                uart_resume();
+		mbed_stats_cpu_get(&stats);
+		printf("CPU %lu: up time %9llu (sleep %2llu%%, deepsleep %2llu%%)\n", 
+			     ticker_callback_count, stats.uptime, (stats.sleep_time * 100) / stats.uptime, 
+			     (stats.deep_sleep_time * 100) / stats.uptime);
+        ticker_callback_count++;
+        if (ticker_callback_count > 0)
+            break;
+	}
+}
+
+void resource_and_network_monitor(void) {
+        client->pause();
+        printf("PDMC paused.\n");
+        mcc_platform_close_connection();
+        mcc_platform_do_wait(5000);
+        printf("connection closed\n");
+
+        check_deepsleep();
+
+        mcc_platform_init_connection();
+        mcc_platform_do_wait(5000);
+        printf("connection resumed\n");
+        client->resume(mcc_platform_get_network_interface());
+        printf("PDMC resumed\n");
+}
 
 void counter_updated(const char*)
 {
@@ -306,6 +410,13 @@ void main_application(void)
     queue->dispatch_forever();
 #else
 
+    EventQueue eventQueue; //using separate event queue in main thread
+
+    LowPowerTicker lpticker_main;
+    lpticker_main.attach(eventQueue.event(&resource_and_network_monitor), 60.0);
+
+    eventQueue.dispatch_forever();
+/*
     // Check if client is registering or registered, if true sleep and repeat.
     while (mbedClient.is_register_called()) {
         mcc_platform_do_wait(100);
@@ -313,5 +424,6 @@ void main_application(void)
 
     // Client unregistered, disconnect and exit program.
     mcc_platform_interface_close();
+*/
 #endif
 }

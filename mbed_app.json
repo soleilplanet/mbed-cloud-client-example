@@ -1,6 +1,9 @@
 {
     "macros": [
-        "ARM_UC_USE_PAL_BLOCKDEVICE=1"
+        "ARM_UC_USE_PAL_BLOCKDEVICE=1",
+        "MBED_CONF_APP_NO_LED",
+        "MBED_TICKLESS=1",
+        "MBED_CPU_STATS_ENABLED=1"
     ],
     "target_overrides": {
         "*": {
@@ -16,7 +19,55 @@
             "mbed-trace.enable"                         : null,
             "nsapi.default-wifi-security"               : "WPA_WPA2",
             "nsapi.default-wifi-ssid"                   : "\"SSID\"",
-            "nsapi.default-wifi-password"               : "\"Password\""
+            "nsapi.default-wifi-password"               : "\"Password\"",
+            "nanostack-eventloop.use_platform_tick_timer": true,
+            "nanostack-eventloop.exclude_highres_timer" : true,
+            "events.use-lowpower-timer-ticker"          : true,
+            "platform.poll-use-lowpower-timer"          : true
+
+        },
+	"MTB_ADV_WISE_1570": {
+            "bootloader-size"                           : "(40*1024)", 
+            "target.features_add"                       : ["STORAGE", "BOOTLOADER", "LWIP"],
+            "target.bootloader_img"                     : "tools/mbed-bootloader-4.0.3.WISE-1570.hex",
+            "target.components_add"                     : ["SPIF"],
+            "target.network-default-interface-type"     : "CELLULAR",
+            "target.clock_source"                       : "USE_PLL_HSE_XTAL",
+	    "target.stdio_uart_tx"                      : "UART2_TX",
+            "target.stdio_uart_rx"                      : "UART2_RX",
+	    "target.header_offset"                      : "0xB000",
+	    "target.app_offset"                         : "0xB400",
+            "rtos.main-thread-stack-size"               : 6144,
+            "mbed-client-pal.pal-max-frag-len"          : 1,
+            "mbed-client.sn-coap-max-blockwise-payload-size": 256,
+            "cellular.debug-at"                         : false,
+            "cellular.use-apn-lookup"                   : false,
+            "nsapi.dns-response-wait-time"              : 30000,
+            "client_app.pal_dtls_peer_min_timeout"      : "20000",
+            "storage.storage_type"                      : "FILESYSTEM",
+            "storage_filesystem.filesystem"             : "LITTLE",
+            "storage_filesystem.blockdevice"            : "SPIF",
+            "storage_filesystem.internal_base_address"  : "(MBED_ROM_START + MBED_BOOTLOADER_SIZE)",
+            "storage_filesystem.rbp_internal_size"      : "(4*1024)",
+            "storage_filesystem.external_base_address"  : "0",
+            "storage_filesystem.external_size"          : "(1*1024*1024)",
+            "update-client.application-details"         : "(MBED_CONF_STORAGE_FILESYSTEM_INTERNAL_BASE_ADDRESS + MBED_CONF_STORAGE_FILESYSTEM_RBP_INTERNAL_SIZE)",
+            "update-client.storage-address"             : "(MBED_CONF_STORAGE_FILESYSTEM_EXTERNAL_BASE_ADDRESS + MBED_CONF_STORAGE_FILESYSTEM_EXTERNAL_SIZE)",
+            "update-client.storage-size"                : "(1024*1024*3)",
+            "update-client.storage-locations"           : 1,
+            "update-client.firmware-header-version"     : "2",
+            "update-client.storage-page"                : 1,
+            "mbed-cloud-client.update-storage"          : "ARM_UCP_FLASHIAP_BLOCKDEVICE",
+            "target.extra_labels_add"                   : ["PSA"],
+            "target.macros_add"                         : ["MBEDTLS_PSA_CRYPTO_C"],
+            "spif-driver.SPI_MOSI"                      : "PA_7",
+            "spif-driver.SPI_MISO"                      : "PA_6",
+            "spif-driver.SPI_CLK"                       : "PA_5",
+            "spif-driver.SPI_CS"                        : "PA_15",
+	    "spif-driver.SPI_FREQ"                      : 20000000,
+            "led-pinname"                               : "LED3",
+            "client_app.platform-enable-button"         : false,
+            "client_app.platform-enable-led"            : false
         },
         "Freescale": {
             "lwip.mem-size"                             : 12500
